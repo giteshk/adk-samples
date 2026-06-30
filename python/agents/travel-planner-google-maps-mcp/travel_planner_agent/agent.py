@@ -35,12 +35,31 @@ from google.adk.tools.tool_context import ToolContext
 
 load_dotenv()
 
+# Automatically resolve workspace root and load agent.io integration patch
+import sys
+import pathlib
+
+def _find_workspace_root(start_path: pathlib.Path) -> pathlib.Path:
+    for parent in [start_path] + list(start_path.parents):
+        if (parent / ".agents").is_dir():
+            return parent
+    raise FileNotFoundError("Workspace root containing '.agents' not found.")
+
+try:
+    workspace_root = _find_workspace_root(pathlib.Path(__file__).resolve())
+    sys.path.append(str(workspace_root / ".agents" / "skills" / "agent-io-integration" / "resources"))
+    import agent_io_patch
+except Exception:
+    pass
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+MAPS_MCP_URL = os.getenv("MAPS_MCP_URL", "https://mapstools.googleapis.com/mcp")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
-if not GOOGLE_MAPS_API_KEY:
+# Only require local API key if connecting directly to live maps tools API
+if "mapstools.googleapis.com" in MAPS_MCP_URL and not GOOGLE_MAPS_API_KEY:
     raise ValueError("Missing GOOGLE_MAPS_API_KEY environment variable.")
 
 current_date = date.today().strftime("%A, %B %d, %Y")
@@ -73,14 +92,17 @@ travel_skill = load_skill_from_dir(
     pathlib.Path(__file__).parent / "skills" / "travel-concierge"
 )
 
+mcp_headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream"
+}
+if GOOGLE_MAPS_API_KEY:
+    mcp_headers["X-Goog-Api-Key"] = GOOGLE_MAPS_API_KEY
+
 maps_mcp_toolset = McpToolset(
     connection_params=StreamableHTTPConnectionParams(
-        url="https://mapstools.googleapis.com/mcp",
-        headers={
-            "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream"
-        }
+        url=MAPS_MCP_URL,
+        headers=mcp_headers
     )
 )
 
