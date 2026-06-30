@@ -2,7 +2,7 @@ import os
 import re
 import pathlib
 import logging
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from google.adk.models import Gemini
 from google.adk.tools.mcp_tool import McpToolset
 
@@ -75,7 +75,9 @@ class AgentIoMcpToolset(McpToolset):
                 config = mappings[host]
                 port = config["port"]
                 logger.info(f"[agent.io] Automatically routing {connection_params.url} through proxy port {port}")
-                connection_params.url = f"http://localhost:{port}/mcp"
+                
+                # Dynamic redirect preserving path and query params
+                connection_params.url = urlunparse(parsed_url._replace(scheme="http", netloc=f"localhost:{port}"))
                 
                 # Dynamically strip headers that the proxy is configured to inject
                 if connection_params.headers:
