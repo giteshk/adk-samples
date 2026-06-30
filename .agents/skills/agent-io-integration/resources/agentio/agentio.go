@@ -128,3 +128,31 @@ func RedirectRequest(req *http.Request) {
 		}
 	}
 }
+
+// UpdateEnviron updates environment variables (like GOOGLE_GEMINI_BASE_URL, MAPS_MCP_URL)
+// based on the discovered HCL config, and sets placeholder API keys.
+func UpdateEnviron() {
+	mappings, err := GetIOMappings()
+	if err != nil || mappings == nil {
+		return
+	}
+
+	for target, config := range mappings {
+		if target == "generativelanguage.googleapis.com" {
+			if os.Getenv("GOOGLE_GEMINI_BASE_URL") == "" {
+				os.Setenv("GOOGLE_GEMINI_BASE_URL", fmt.Sprintf("http://localhost:%d", config.Port))
+			}
+			if os.Getenv("GEMINI_API_KEY") == "" {
+				os.Setenv("GEMINI_API_KEY", "agent_io_secured_placeholder")
+			}
+		} else if target == "mapstools.googleapis.com" {
+			if os.Getenv("MAPS_MCP_URL") == "" {
+				os.Setenv("MAPS_MCP_URL", fmt.Sprintf("http://localhost:%d/mcp", config.Port))
+			}
+			if os.Getenv("GOOGLE_MAPS_API_KEY") == "" {
+				os.Setenv("GOOGLE_MAPS_API_KEY", "agent_io_secured_placeholder")
+			}
+		}
+	}
+}
+

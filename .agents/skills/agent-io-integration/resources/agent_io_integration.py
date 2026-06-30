@@ -101,3 +101,25 @@ class AgentIoGemini(Gemini):
             kwargs["base_url"] = f"http://localhost:{port}"
             
         super().__init__(*args, **kwargs)
+
+def update_environ() -> None:
+    """Updates environment variables to point to the agent.io proxy based on discovered config."""
+    mappings = get_io_mappings()
+    if not mappings:
+        return
+        
+    for target, config in mappings.items():
+        port = config["port"]
+        if target == "generativelanguage.googleapis.com":
+            if "GOOGLE_GEMINI_BASE_URL" not in os.environ:
+                os.environ["GOOGLE_GEMINI_BASE_URL"] = f"http://localhost:{port}"
+                logger.info(f"[agent.io] Set GOOGLE_GEMINI_BASE_URL to http://localhost:{port}")
+            if "GEMINI_API_KEY" not in os.environ:
+                os.environ["GEMINI_API_KEY"] = "agent_io_secured_placeholder"
+        elif target == "mapstools.googleapis.com":
+            if "MAPS_MCP_URL" not in os.environ:
+                os.environ["MAPS_MCP_URL"] = f"http://localhost:{port}/mcp"
+                logger.info(f"[agent.io] Set MAPS_MCP_URL to http://localhost:{port}/mcp")
+            if "GOOGLE_MAPS_API_KEY" not in os.environ:
+                os.environ["GOOGLE_MAPS_API_KEY"] = "agent_io_secured_placeholder"
+

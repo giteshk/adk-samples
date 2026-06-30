@@ -11,6 +11,17 @@ By splitting the configuration, we keep API keys completely hidden from the agen
 
 ---
 
+## 🤖 Agent Automation & Capabilities
+
+When this skill is loaded, your agentic coding assistant (Antigravity) can perform the following automations:
+- **Codebase Scanning**: Analyze your agent code to detect outbound HTTP endpoints, MCP tools, and Gemini models.
+- **Topology Generation**: Automatically construct or update the public `io.hcl` configuration matching your codebase dependencies.
+- **Code Integration**: Automatically patch your scripts (using any of the patterns outlined below) to enable proxy redirection.
+- **Environment Variable Function Updates**: Automatically extend the `update_environ` (Python) and `UpdateEnviron` (Go) functions in the skill resources to map new target domains to their correct client library environment variables when new services are added.
+
+---
+
+
 ## 🔒 Security Architecture
 
 To prevent LLM-generated code or compromised tools from leaking your `GOOGLE_MAPS_API_KEY` or `GEMINI_API_KEY`, we enforce a strict security boundary:
@@ -96,7 +107,7 @@ except Exception:
     pass
 ```
 
-After setting the path, choose one of the following two implementation patterns:
+After setting the path, choose one of the following three implementation patterns:
 
 ### Pattern A: Zero-Code Change (Monkeypatch)
 
@@ -143,6 +154,22 @@ root_agent = Agent(
 
 ---
 
+### Pattern C: Environment Variable Update
+
+To configure routing purely using environment variables based on the checked-in `io.hcl` file, import and call `update_environ` at the start of your script:
+
+```python
+try:
+    from agent_io_integration import update_environ
+    update_environ()
+except ImportError:
+    pass
+```
+
+This dynamically reads the `io.hcl` configuration and sets `GOOGLE_GEMINI_BASE_URL` and `MAPS_MCP_URL` to point to the local proxy ports, and sets placeholder API keys to satisfy local validation checks.
+
+---
+
 ## 🐹 Go Implementation Steps
 
 To use the shared assets in any Go sample agent, you can import the custom `agentio` Go package library located in the skill resources folder.
@@ -160,7 +187,9 @@ import (
 > [!NOTE]
 > The Go library [agentio.go](resources/agentio/agentio.go) automatically climbs the directory tree to search for the checked-in `io.hcl` file, extracting the active proxy ports and applied headers dynamically.
 
-### 2. Redirect Requests Dynamically
+### 2. Choose Integration Pattern
+
+#### Pattern A: Dynamic Request Redirection
 Use the library's `RedirectRequest` function to intercept and rewrite your outbound HTTP/gRPC requests transparently:
 
 ```go
@@ -178,3 +207,12 @@ agentio.RedirectRequest(req)
 client := &http.Client{}
 resp, err := client.Do(req)
 ```
+
+#### Pattern B: Environment Variable Update
+Alternatively, call `agentio.UpdateEnviron()` at startup to dynamically populate environment variables (like `GOOGLE_GEMINI_BASE_URL` and `MAPS_MCP_URL`) using the local proxy configuration:
+
+```go
+agentio.UpdateEnviron()
+// Outbound client libraries will now read these variables automatically
+```
+
