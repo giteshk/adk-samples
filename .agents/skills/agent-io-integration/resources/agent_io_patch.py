@@ -1,10 +1,6 @@
 import os
 import logging
-<<<<<<< HEAD
-from urllib.parse import urlparse
-=======
 from urllib.parse import urlparse, urlunparse
->>>>>>> 7801ceee (    feat(sec): add secure, self-discovering agent.io integration skill)
 from google.adk.models import Gemini
 from google.adk.tools.mcp_tool import McpToolset
 from agent_io_integration import get_io_mappings
@@ -37,17 +33,11 @@ if mappings:
                 config = mappings[host]
                 port = config["port"]
                 logger.info(
-<<<<<<< HEAD
-                    f"[agent.io patch] Redirecting Maps MCP toolset from {connection_params.url} to http://localhost:{port}/mcp"
-                )
-                connection_params.url = f"http://localhost:{port}/mcp"
-=======
                     f"[agent.io patch] Redirecting Maps MCP toolset from {connection_params.url} to local proxy port {port}"
                 )
                 
                 # Dynamic redirect preserving path and query params
                 connection_params.url = urlunparse(parsed_url._replace(scheme="http", netloc=f"localhost:{port}"))
->>>>>>> 7801ceee (    feat(sec): add secure, self-discovering agent.io integration skill)
                 
                 # Dynamically strip headers configured in HCL file
                 if connection_params.headers:

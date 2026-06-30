@@ -114,20 +114,9 @@ func RedirectRequest(req *http.Request) {
 
 	host := req.URL.Hostname()
 	if config, exists := mappings[host]; exists {
-<<<<<<< HEAD
-		// Update URL scheme and host to point to local proxy port
-		req.URL.Scheme = "http"
-		req.URL.Host = fmt.Sprintf("localhost:%d", config.Port)
-		
-		// If MCP, append /mcp suffix to path
-		if host == "mapstools.googleapis.com" && !strings.HasSuffix(req.URL.Path, "/mcp") {
-			req.URL.Path = "/mcp"
-		}
-=======
 		// Update URL scheme and host to point to local proxy port, preserving the original path
 		req.URL.Scheme = "http"
 		req.URL.Host = fmt.Sprintf("localhost:%d", config.Port)
->>>>>>> 7801ceee (    feat(sec): add secure, self-discovering agent.io integration skill)
 
 		// Dynamically strip headers that the proxy will inject automatically
 		for _, header := range config.AppliedHeaders {
